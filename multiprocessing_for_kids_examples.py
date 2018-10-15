@@ -2,9 +2,9 @@
 # package. I hope this makes it really easy for you to use it in your own projects
 
 # Just uncomment the example function you want to see on the bottom. There is also a detailed
-# description to every example. (inside the if __name__ == "__main__": statement)
+# description to every example. (inside the if __name__ == "__main__": statement on the bottom)
 
-import Multiprocessing_for_kids as mulki
+import multiprocessing_for_kids as mulki
 import random
 import time
 
@@ -17,17 +17,20 @@ import time
 
 def countTo(iter_val, goal, steps, _print):
     t0 = time.time()
-    step_range = int(goal / steps)               # 2 mil / steps (e.g. 10 steps a 200k each -> _range = 200k)
-    _from = (iter_val-1) * step_range            # e.g. step 1: 1-1 * 200.000 = 0
-    _to   = iter_val     * step_range            # e.g. step 1: 1 * 200.000 = 200.000
+
+    step_range = int(goal / steps)  # goal = 2 million, steps = 10 -> step_range = 200k
+
+    _from = (iter_val - 1) * step_range     # e.g. step 1: 1-1 * 200k = 0
+    _to = iter_val * step_range             # e.g. step 1: 1 * 200k = 200k
 
     ''' the actual counting: '''
-    for i in range(_from, _to + 1):            # +1 to get to 200k instead of 199.999
+    for i in range(_from, _to + 1):         # _to + 1 to get to 200k instead of 199.999
         if _print:
             print(i)
 
-    print("Finished:", iter_val, " from ", _from, " to ", _to, "in", round(time.time()-t0,1), "s")
-
+    # Print the current job and time it took to execute:
+    print("Finished:", iter_val, " from ", _from, " to ", _to, "in",
+          round(time.time() - t0, 1), "s")
 
 def example1(_print = False, without_mp = False):
     # In this first example we count in 10 steps to 2 million. Each step is handled by a
@@ -35,10 +38,10 @@ def example1(_print = False, without_mp = False):
     # 100 episodes to 2 million. Just change the iterator to range(1,101)
     print("Start...")
     t_start_mp = time.time()
-    iterator = range(1,11)          # count 10 times to 200k -> 2 million
-    goal = 2000000                  # count to 2 mil
-    if not _print:                  # to see an effect when there is no printing
-        goal = goal * 1000          # we count to 2 billion instead of 2 million
+    iterator = range(1, 11)     # 1,2,3,4,5,6,7,8,9,10
+    goal = 2000000              # counting goal
+    if not _print:              # if we don't print every number
+        goal = goal * 10000      # we count to 2 billion instead of 2 million
 
     # With Multiprocessing:
     mulki.doMultiprocessingLoop(countTo, iterator, False, goal, len(iterator), _print)
@@ -108,7 +111,7 @@ def example3():
 
 
 if __name__ == "__main__":
-    example1() # uncomment this to see example 1. Read notes below
+    example1(False) # uncomment this to see example 1. Read notes below
     # For better understanding what the example is doing run example1(False).
     # As we can see it counts from 0 to 2 billon in 10 (printed) steps. Each step runs
     # in a separate process so we use 100% of CPU. If you don't see your CPU
