@@ -38,10 +38,10 @@ def example1(_print = False, without_mp = False):
     # 100 episodes to 2 million. Just change the iterator to range(1,101)
     print("Start...")
     t_start_mp = time.time()
-    iterator = range(1, 11)     # 1,2,3,4,5,6,7,8,9,10
+    iterator = range(1, 5)     # 1,2,3,4,5,6,7,8,9,10
     goal = 2000000              # counting goal
     if not _print:              # if we don't print every number
-        goal = goal * 10000      # we count to 2 billion instead of 2 million
+        goal = goal * 1000      # we count to 2 billion instead of 2 million
 
     # With Multiprocessing:
     mulki.doMultiprocessingLoop(countTo, iterator, False, goal, len(iterator), _print)
@@ -62,7 +62,7 @@ def example1(_print = False, without_mp = False):
 
 def changeSharedVar(iter_val, var1, var2):
     # Important: Change the var.value property, not the var directly
-    for i in range(random.randrange(100,10000)):
+    for i in range(1000):#random.randrange(100,10000)):
         var1.value += 1
     print("var1 = ", var1.value)
     var2.value += "o"
@@ -86,7 +86,7 @@ def example2():
 # 1 return variable
 
 def seach_the_number(_, the_number, search_range, attempt):
-    # !!! First the iterator then the static then the shared vars !!!
+    # !!! First the iterator then the static vars then the shared vars !!!
     # The task is to find a given Number between 0 and 10.000
     guess = 0
     while guess != the_number:
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     # between 100 and 10k).
     # With this we have proven that all processes are manipulating the same shared variables
     # Sharing variables also works with strings (var2), floats, lists,
-    # dicts, and queues (not recommended, see Multiprocessing_for_kids.py for more info)
+    # dicts, and queues (queues not recommended, see Multiprocessing_for_kids.py for more info)
     # You can add more types by manipulating the "__varToValue()" function in
     # Multiprocessing_for_kids.py
 

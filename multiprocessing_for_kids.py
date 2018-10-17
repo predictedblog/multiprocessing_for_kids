@@ -129,6 +129,11 @@ def doMultiprocessingLoop(loopFunction_, loopIterator, terminateIfValReturned=Fa
     #                  "and are executed in a limeted fassion are feasible for Multiprocessing.")
     #    return "Error, loop iterator can't have more than 600 entries"
 
+    # Check if terminateIfValReturned is boolean or forgotten:
+    if not isinstance(terminateIfValReturned, bool):
+        raise ValueError("The third argument in doMultiprocessingLoop must be boolean. It represents if the processing should be terminated as soon as a value is returned by your function. Default value is False.")
+
+    # Using Lock: https://www.geeksforgeeks.org/synchronization-pooling-processes-python/
     p = Pool(NUM_OF_PARALLEL_PROCESSES)  # my Macbook e.g. has 4 CPU's # Programming fact: Pool() must be defined in the function where it's used!!
     def __callback(e):
         if terminateIfValReturned:
@@ -157,7 +162,7 @@ def doMultiprocessingLoop(loopFunction_, loopIterator, terminateIfValReturned=Fa
     #     if (sum(ready) == len(loopIterator)):
     #         break
 
-    ''' Wait for Results ''' # if join fails to wait properly (happend, trust me)
+    ''' Wait for Results ''' # if p.join() fails, wait here (happend, trust me)
     while True: # Checks if every Process is done.
         # sleep(0.0001) # maybe?
         if (sum([r.ready() for r in res]) == len(loopIterator)) or terminated:
@@ -206,4 +211,6 @@ def doMultiprocessingLoop(loopFunction_, loopIterator, terminateIfValReturned=Fa
 
 
 ''' Examples on how to use this Module: '''
-# Please see multiprocessing_for_kids_examples.py or my blog post here: predicted.blog/multiprocessing-for-kids
+# Please see multiprocessing_for_kids_examples.py
+# Or my blog posts here: predicted.blog/multiprocessing-for-kids
+# and here: https://predicted.blog/multiprocessing-for-kids-shared-variables
