@@ -7,165 +7,243 @@
 import multiprocessing_for_kids as mulki
 import random
 import time
+from ortools.algorithms import pywrapknapsack_solver
+from multiprocessing import cpu_count, Lock
+
 
 ''' Example 1: count 2 million '''
-# split in 10 tasks, each counting to 200 thousand
-# 3 static arguments
+# split in 10 tasks, each counting to 200 thousand or 200 million
+# 3 constant arguments
 # no shared variables
-# no return variable
+# no return value
 
-
-def countTo(iter_val, goal, steps, _print):
+def countTo(iter_val, GOAL, STEPS, PRINT):
     t0 = time.time()
 
-    step_range = int(goal / steps)  # goal = 2 million, steps = 10 -> step_range = 200k
+    STEP_RANGE = int(GOAL / STEPS)  # goal = 2 million, steps = 10 -> step_range = 200k
 
-    _from = (iter_val - 1) * step_range     # e.g. step 1: 1-1 * 200k = 0
-    _to = iter_val * step_range             # e.g. step 1: 1 * 200k = 200k
+    FROM = (iter_val - 1) * STEP_RANGE     # e.g. step 1: 1-1 * 200k = 0
+    TO = iter_val * STEP_RANGE             # e.g. step 1: 1 * 200k = 200k
 
     ''' the actual counting: '''
-    for i in range(_from, _to + 1):         # _to + 1 to get to 200k instead of 199.999
-        if _print:
+    for i in range(FROM, TO + 1):         # TO + 1 to get to 200k instead of 199.999
+        if PRINT:
             print(i)
 
     # Print the current job and time it took to execute:
-    print("Finished:", iter_val, " from ", _from, " to ", _to, "in",
+    print("Finished:", iter_val, " from ", FROM, " to ", TO, "in",
           round(time.time() - t0, 1), "s")
 
-def example1(_print = False, without_mp = False):
+def example1(PRINT = False, WITHOUT_MP = False):
     # In this first example we count in 10 steps to 2 million. Each step is handled by a
     # different process. So our iterator counts from 1 to 10. We could also count in
     # 100 episodes to 2 million. Just change the iterator to range(1,101)
     print("Start...")
     t_start_mp = time.time()
-    iterator = range(1, 5)     # 1,2,3,4,5,6,7,8,9,10
-    goal = 2000000              # counting goal
-    if not _print:              # if we don't print every number
-        goal = goal * 1000      # we count to 2 billion instead of 2 million
+    iterator = range(1, 11)     # 1,2,3,4,5,6,7,8,9,10
+    GOAL = 2000000              # counting goal
+    if not PRINT:               # if we don't print every number
+        GOAL = GOAL * 1000      # we count to 2 billion instead of 2 million
 
     # With Multiprocessing:
-    mulki.doMultiprocessingLoop(countTo, iterator, False, goal, len(iterator), _print)
+    mulki.doMultiprocessingLoop(countTo, iterator, False, GOAL, len(iterator), PRINT)
     print("Finished counting with Multiprocessing in ", round(time.time()-t_start_mp, 1), "s")
 
     # Without Multiprocessing:
-    if without_mp:
+    if WITHOUT_MP:
         t_start_normal = time.time()
-        countTo(1, goal, 1, _print)
+        countTo(1, GOAL, 1, PRINT)
         print("Finished counting without Multiprocessing in ", round(time.time()-t_start_normal, 1), "s")
 
 
 
-''' Example 2: edit and print shared Variables '''
-# no static arguments
-# 2 shared variables
-# no return variable
 
-def changeSharedVar(iter_val, var1, var2):
-    # Important: Change the var.value property, not the var directly
-    for i in range(1000):#random.randrange(100,10000)):
-        var1.value += 1
-    print("var1 = ", var1.value)
-    var2.value += "o"
-    print("Process Nr:", iter_val, " var2 =", var2.value)
+''' Example 2: Search the Number '''
+# let the processes all do the same searching task and write it into a shared variable.
+# 2 constant arguments
+# 1 shared variable
+# no return value
+
+def seach_the_number(_, THE_NUMBER, SEARCH_RANGE, result):
+    # The task is to find a given Number between 0 and 100.000
+    guess = 0
+    while guess != THE_NUMBER:
+        guess = random.randrange(1, SEARCH_RANGE)
+        if result.value != 0:
+            break
+    else: # only if the loop breaks by its termination condition
+        result.value = guess
 
 def example2():
-    # Now we want to use two shared variables. Therefore, we count randomly to get
-    # different timeframes in each separate process. This way the variables are changed
-    # and printed at different times from different processes.
-    var1 = 0
-    var2 = "Hello"
-    mulki.addSharedVars(var1, var2)
-    mulki.doMultiprocessingLoop(changeSharedVar, range(10))
+    t0 = time.time()         # measure time
+
+    SEARCH_RANGE = 100000    # modify this for longer searching times
+    THE_NUMBER = random.randrange(1, SEARCH_RANGE)  # search result
+    print("Number to guess: ", THE_NUMBER)
+
+    print("Start guessing...")
+    result = 0
+    mulki.addSharedVars(result) # result as shared var
+    mulki.doMultiprocessingLoop(seach_the_number, range(cpu_count()), False, THE_NUMBER, SEARCH_RANGE)
+
+    print("Correct guess:", mulki.getSharedVarsAsValues()[0], "in ", round(time.time() - t0, 2), "s")
 
 
-''' Example 3: return as soon as a result was found '''
-# let the processes all do the same searching task and the first one who finds a solution
-# returns it.
-# 2 static arguments
+
+''' Example 3: Search the Number with termination '''
+# let the processes all do the same searching task and write it into a shared variable.
+# 2 constant arguments
 # 1 shared variable
-# 1 return variable
+# no return value
 
-def seach_the_number(_, the_number, search_range, attempt):
-    # !!! First the iterator then the static vars then the shared vars !!!
-    # The task is to find a given Number between 0 and 10.000
+def seach_the_number_ret(_, THE_NUMBER, SEARCH_RANGE): # attempt
+    # First comes the iterator then the static vars then the shared vars !!!
+    # The task is to find a given Number between 1 and SEARCH_RANGE
     guess = 0
-    while guess != the_number:
-        attempt.value += 1
-        guess = random.randrange(search_range)
+    # current_attempts = 0
+
+    while guess != THE_NUMBER:
+        guess = random.randrange(SEARCH_RANGE)
+
+        # attempt.value += 1
+        # attempts counting (looks complex but is fast, but not 100% accurat.): # USE LOCK!
+        #current_attempts += 1
+        #if current_attempts > 20: # final attempt value will be max 4*20 guesses of the real number of attempts.
+        #    attempt.value += current_attempts # save in shared var (USE LOCK)
+        #    current_attempts = 0 # reset for next 20 attempts
+
     return guess
 
 def example3():
-    t_start = time.time()   # measure time
+    t0 = time.time()         # measure time
 
-    search_range = 10000    # modify this for longer searching times
+    SEARCH_RANGE = 100000    # modify this for longer searching times
+    THE_NUMBER = random.randrange(SEARCH_RANGE) # search result
+    print("Number to guess: ", THE_NUMBER)
 
-    the_number = random.randrange(search_range) # the process that finds this Number wins
-    print("Number to guess: ", the_number)
+    print("Start guessing...")
+    result = mulki.doMultiprocessingLoop(seach_the_number_ret, range(100), True, THE_NUMBER, SEARCH_RANGE)
 
-    mulki.addSharedVars(0) # attempts as shared var
-    result = mulki.doMultiprocessingLoop(seach_the_number, range(100), True, the_number, search_range)
+    print("Correct guess:", result[0], "in ", round(time.time() - t0, 2), "s")
 
-    print("Correct guess:", result[0], "after", mulki.getSharedVarsAsValues()[0], "attempts [time:", round(time.time() - t_start, 1), "s]")
+    # print("Correct guess:", result[0], "after", mulki.getSharedVarsAsValues()[0], "attempts [time:", round(time.time() - t0, 1), "s]")
+
+
+
+
+''' Example 4: count a shared variable '''
+# This example shows the limits of shared variables. It should demonstrate what can go wrong
+# and how to prevent this from happening.
+# no constant arguments
+# 1 shared variable
+# no return value
+
+lock = Lock()
+def countTo_shared(_, PROCESS_GOAL, PRINT, counter):
+    for _ in range(PROCESS_GOAL):
+        lock.acquire()
+        counter.value += 1
+        lock.release()
+        if PRINT:
+            print(counter.value)
+
+def example4(PRINT = True):
+    print("Start...")
+    t0 = time.time()
+    GOAL = 100000          # counting goal = 100.000
+    PROCESS_GOAL = int(GOAL / cpu_count())
+    mulki.addSharedVars(0) # the counter variable
+    mulki.doMultiprocessingLoop(countTo_shared, range(cpu_count()), False, PROCESS_GOAL, PRINT)
+    print("Finished counting with Multiprocessing in ", round(time.time()-t0, 1), "s")
+
+
+
+''' Example 5: search for optimal knapsack solution '''
+# For explanation see my blog post at: https://predicted.blog/multiprocessing-knapsack-problem
+# 3 constant arguments
+# 2 shared variable
+# no return variable
+
+def knapsack_search(_, VOLUMES, PRICES, KNAPSACK_VOLUME, solution, solution_price):
+    # Parameters: First the iterator then the static vars and then the shared vars !
+    # Note to Shared variables: Change the .value property, not the variable directly.
+    OBJECTS = len(VOLUMES)  # amount of objects
+    t0 = time.time()
+    while (time.time() - t0) < 60: # search for 20 seconds
+
+        # Create a random filling of the knapsack:
+        pick_positions = random.sample(list(range(OBJECTS)), OBJECTS)
+        current_volumes = [VOLUMES[i] for i in pick_positions]
+
+        # it's to full! Remove elements until the volume fits:
+        for i in range(1, OBJECTS):
+            current_volumes = current_volumes[:-1]
+            if sum(current_volumes) <= KNAPSACK_VOLUME:
+                pick_positions = pick_positions[:-i]
+                break
+
+        # calculate total price and check if it beats the current best
+        total_price = sum([PRICES[i] for i in pick_positions])
+        if total_price > solution_price.value:
+            solution_price.value = total_price
+            solution.value = pick_positions
+
+        # Debugging:
+        if round(time.time() - t0,0) in list(range(0,60,5)): # debugging
+            print(round(time.time() - t0,0),"s, current best:",solution_price.value)
+
+
+def example5():
+    # We create our knapsack items and start the multiprocessing loop that uses the
+    # knapsack_search() function above.
+    OBJECTS = 20 # amount of items
+
+    random.seed(42) # make volumes reproducible
+    VOLUMES = [random.randint(20, 100) for _ in range(OBJECTS)] # random volumes for 100 Objects
+    random.seed(42) # make prices reproducible
+    PRICES  = [random.randint(10, 800) for _ in range(OBJECTS)] # random prices for 100 Objects
+
+    KNAPSACK_VOLUME = int(sum(VOLUMES) / 4) # volume that fits in the knapsack (1/4 of all objects)
+
+    solution = [0]
+    solution_price = 0
+    mulki.addSharedVars(solution, solution_price) # add shared vars to mulki
+
+    mulki.doMultiprocessingLoop(knapsack_search, range(cpu_count()), False, VOLUMES, PRICES, KNAPSACK_VOLUME)
+
+    print("random guessing solution: ", mulki.getSharedVarsAsValues()[1]) # in [0] are the actual items
+    # print("sum volumes:", sum([VOLUMES[i] for i in mulki.getSharedVarsAsValues()[0]]), "max:", KNAPSACK_VOLUME)
+
+    # Google Solver:
+    t0 = time.time()
+    solver = pywrapknapsack_solver.KnapsackSolver(
+        pywrapknapsack_solver.KnapsackSolver.KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER, 'test')
+    solver.Init(PRICES, [VOLUMES], [KNAPSACK_VOLUME])
+    computed_value = solver.Solve()
+    print("\nGoogle OR Optimal Solution (max):", computed_value)
+    # packed_items = [x for x in range(len(PRICES))
+    #                 if solver.BestSolutionContains(x)]
+    # packed_prices = [PRICES[i] for i in packed_items]
+    # print("Packed items: ", packed_items)
+    print("found in", round(time.time()-t0,5),"s")
+
+
 
 
 
 
 if __name__ == "__main__":
-    example1(False) # uncomment this to see example 1. Read notes below
-    # For better understanding what the example is doing run example1(False).
-    # As we can see it counts from 0 to 2 billon in 10 (printed) steps. Each step runs
-    # in a separate process so we use 100% of CPU. If you don't see your CPU
-    # fully occupied, just increase the goal value in example1()
-
-    # As you run example1(False) you can see Steps "Finished: 2 ...", "Finished: 1.."
-    # finishing at kind of the same time. The number of steps finishing at (nearly) the same
-    # time is the amount of CPU's that are used. Each process counts a different range and each
-    # process has been running on a different processor. After the first e.g. 4 ranges are
-    # done counting through, the e.g. 4 CPU's are back available and start with the next
-    # 4 ranges (steps) of counting. That's why 4 steps always finish in (nearly) the same time
-    # (if you have 4 CPU's).
-
-    # Sometimes we see processes not finishing in the Order they are started. That's the
-    # prove that there are actually multiple processes running in parallel on different
-    # CPU's. We can even see the counting of the processes and the current values if we run
-    # example1(True) # (uncomment this) don't forget to comment example1() above
-    # As we can see, the order is mixed up.
-
-    # To Compare the time to "normal" counting on one CPU without multiprocessing, run:
-    # example1(False, True)
-
-    # If we don't want to split the counting task or we want to do the counting (or another
-    # task) in order, we have to use shared variables as we can see in example2.
-
-
-
-    # example2() # uncomment this and comment example1() above
-    # As we can see, the output (print) of var1 is always in order (increasing over time) even
-    # when the processes finished after different time frames (because counting to values
-    # between 100 and 10k).
-    # With this we have proven that all processes are manipulating the same shared variables
-    # Sharing variables also works with strings (var2), floats, lists,
-    # dicts, and queues (queues not recommended, see Multiprocessing_for_kids.py for more info)
-    # You can add more types by manipulating the "__varToValue()" function in
-    # Multiprocessing_for_kids.py
-
-
-
-    # example3()
-    # Here we are showing that the termination process with a return value (the result)
-    # works fine. So, whenever you need to do a calculation that requires a lot of time and
-    # resources but you don't know exactly when it's finished, you can set
-    # terminateIfValReturned = True and return from your function whenever it's done.
-    # This will trigger a callback, terminate all processes and return the return value.
-
-    # trying to make the results reproducible (e.g. with random.seed(1)) is not completely
-    # possible because the CPU's take different times for the calculations depending on their
-    # other tasks.
+    # Uncomment the example you want to run and comment the other ones.
+    example1(False) # https://predicted.blog/multiprocessing-for-kids/
+    # example2()    # https://predicted.blog/multiprocessing-for-kids-shared-variables/
+    # example3()    #                    - " -
+    # example4()    #                    - " -
+    # example5()    # https://predicted.blog/multiprocessing-knapsack-problem
 
     # Author: Sebastian Nichtern
 
+
     ''' Ideas for future examples: ''' # feel free to implement and pull request
-    # 1. Return without termination after each process has finished (one run of the given
-    #    function)
-    # 2. Realworld practical usecase of multi processing (e.g. prime factorization, knn or
-    #    some other expensive algorithm)
+    # 1. Return without termination after each process has finished.
+    #    Mulki returns the value after all processes have finished.
+    # 2. ...

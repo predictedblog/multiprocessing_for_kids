@@ -40,13 +40,14 @@ def __varToValue(var):
         q = m.Queue(var.maxsize+1)
         # To get the queue as a list use the managerQueueToList() Function in this Module
         # !But try _not_ to use this! Use a Dict if you need it as a List anywhere! See the managerQueueToList() for more Info
+        warnings.warn("Using Queue is not recomended! Try to use a dict or list instead.")
         if not var.empty():
             for element in iter(var.get, None): # transfer all queue elements to the manager queue
                 q.put(element)
         return q
     # set() is not available. Use Dict instead. [https://stackoverflow.com/a/37714759/7699319]
     else:
-        print("This Type: \""+str(type(var).__name__)+"\" cannot be shared. Use List, int, float, String, Dict or Queue")
+        print("This Type: \""+str(type(var).__name__)+"\" cannot be shared. Use list, int, float, string, dict or queue")
 
 def addSharedVars(*args):
     global sharedVariables
@@ -56,11 +57,11 @@ def addSharedVars(*args):
 def setSharedVars(pos, val):
     global sharedVariables
     if type(sharedVariables[pos]).__name__ == 'ValueProxy':
-        sharedVariables[pos].value = __varToValue(val)
+        sharedVariables[pos].value = val
     elif type(sharedVariables[pos]).__name__ == 'DictProxy':
-        sharedVariables[pos] = __varToValue(val)
+        sharedVariables[pos].value = val
     elif pos>=len(sharedVariables):
-        print("can't set this shared Variable because the position"+ str(pos) +" dose not exist (index out of bounds). Function: setSharedVars in multiprocessing_me")
+        print("can't set this shared Variable because the position"+ str(pos) +" dose not exist (index out of bounds). Function: setSharedVars in multiprocessing_for_kids")
     else:
         print("This is not a Value or Dict. The given type is not jet defined in the setSharedVars function")
 
@@ -134,11 +135,11 @@ def doMultiprocessingLoop(loopFunction_, loopIterator, terminateIfValReturned=Fa
         raise ValueError("The third argument in doMultiprocessingLoop must be boolean. It represents if the processing should be terminated as soon as a value is returned by your function. Default value is False.")
 
     # Using Lock: https://www.geeksforgeeks.org/synchronization-pooling-processes-python/
-    p = Pool(NUM_OF_PARALLEL_PROCESSES)  # my Macbook e.g. has 4 CPU's # Programming fact: Pool() must be defined in the function where it's used!!
+    p = Pool(NUM_OF_PARALLEL_PROCESSES)  # my Macbook e.g. has 4 CPU's  # Pool() must be defined in the function where it's used!!
     def __callback(e):
         if terminateIfValReturned:
             global terminated
-            if e:
+            if e == e: # check if e != None
                 print("Terminating Multiprocessing...")
                 terminated = True
                 p.terminate()
@@ -177,9 +178,9 @@ def doMultiprocessingLoop(loopFunction_, loopIterator, terminateIfValReturned=Fa
             except TimeoutError: # A res Variable has nothing in it
                 if terminated:
                     continue
-                print("Multiprocessing_me TimeoutError. One of the return Values is not here jet for some reason. It will be skipped. This should never happen.")
+                warnings.warn("Multiprocessing_for_kids TimeoutError. One of the return Values is not here jet for some reason. It will be skipped. This should never happen.")
                 continue
-            if r is not None: # not None
+            if r == r: # not None
                 if isinstance(r, (int, float, str)):
                     results.append(r)
                 elif type(r).__module__ == 'numpy':
@@ -202,7 +203,7 @@ def doMultiprocessingLoop(loopFunction_, loopIterator, terminateIfValReturned=Fa
         except IndexError:
             if terminated:
                 continue
-            print("Multiprocessing_me IndexError. One of the return Values will not be returned!") # I dont know why and I dont know a solution for this
+            warnings.warn("Multiprocessing_me IndexError. One of the return Values will not be returned!") # I dont know why and I dont know a solution for this
         if terminated and results: # results not empty
             break # if terminated, ther will only be one result (the one from the callback)
 
