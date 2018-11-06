@@ -13,7 +13,7 @@
 
 # We now can get python to use 100% of the CPU's instead of just one.
 
-# You can copy this file direktly into your project or into the site-packages folder of your
+# You can copy this file directly into your project or into the site-packages folder of your
 # python distribution to make it accessible in all of your Python projects.
 from multiprocessing import Pool,Manager,managers,cpu_count,TimeoutError # ,Lock
 from ctypes import c_wchar_p
