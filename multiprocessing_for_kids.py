@@ -139,7 +139,7 @@ def doMultiprocessingLoop(loopFunction_, loopIterator, terminateIfValReturned=Fa
     def __callback(e):
         if terminateIfValReturned:
             global terminated
-            if e == e: # check if e != None
+            if e is not None: # check if e != None
                 print("Terminating Multiprocessing...")
                 terminated = True
                 p.terminate()
@@ -180,7 +180,7 @@ def doMultiprocessingLoop(loopFunction_, loopIterator, terminateIfValReturned=Fa
                     continue
                 warnings.warn("Multiprocessing_for_kids TimeoutError. One of the return Values is not here jet for some reason. It will be skipped. This should never happen.")
                 continue
-            if r == r: # not None
+            if r is not None: # not None
                 if isinstance(r, (int, float, str)):
                     results.append(r)
                 elif type(r).__module__ == 'numpy':

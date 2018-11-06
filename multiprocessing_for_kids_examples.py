@@ -1,14 +1,19 @@
 # In this file I will present you some example code on how to use the Multiprocessing for Kids
-# package. I hope this makes it really easy for you to use it in your own projects
+# script. I hope this makes it really easy for you to use it in your own projects
 
 # Just uncomment the example function you want to see on the bottom. There is also a detailed
-# description to every example. (inside the if __name__ == "__main__": statement on the bottom)
+# description to every example on my blog:
+
+# https://predicted.blog/multiprocessing-for-kids/
+# https://predicted.blog/multiprocessing-for-kids-shared-variables/
+# https://predicted.blog/multiprocessing-knapsack-problem
 
 import multiprocessing_for_kids as mulki
 import random
 import time
 from ortools.algorithms import pywrapknapsack_solver
 from multiprocessing import cpu_count, Lock
+
 
 
 ''' Example 1: count 2 million '''
@@ -58,8 +63,11 @@ def example1(PRINT = False, WITHOUT_MP = False):
 
 
 
+
+
 ''' Example 2: Search the Number '''
-# let the processes all do the same searching task and write it into a shared variable.
+# let the processes all do the same searching task and write the solution
+# into a shared variable.
 # 2 constant arguments
 # 1 shared variable
 # no return value
@@ -90,11 +98,13 @@ def example2():
 
 
 
+
+
 ''' Example 3: Search the Number with termination '''
 # let the processes all do the same searching task and write it into a shared variable.
 # 2 constant arguments
-# 1 shared variable
-# no return value
+# no shared variable
+# 1 return value
 
 def seach_the_number_ret(_, THE_NUMBER, SEARCH_RANGE): # attempt
     # First comes the iterator then the static vars then the shared vars !!!
@@ -106,8 +116,8 @@ def seach_the_number_ret(_, THE_NUMBER, SEARCH_RANGE): # attempt
         guess = random.randrange(SEARCH_RANGE)
 
         # attempt.value += 1
-        # attempts counting (looks complex but is fast, but not 100% accurat.): # USE LOCK!
-        #current_attempts += 1
+        # attempts counting (looks complex but is fast, but not 100% accurat.): # MAYBE USE LOCK INSTEAD!
+        # current_attempts += 1
         #if current_attempts > 20: # final attempt value will be max 4*20 guesses of the real number of attempts.
         #    attempt.value += current_attempts # save in shared var (USE LOCK)
         #    current_attempts = 0 # reset for next 20 attempts
@@ -134,7 +144,7 @@ def example3():
 ''' Example 4: count a shared variable '''
 # This example shows the limits of shared variables. It should demonstrate what can go wrong
 # and how to prevent this from happening.
-# no constant arguments
+# 2 constant arguments
 # 1 shared variable
 # no return value
 
@@ -158,6 +168,8 @@ def example4(PRINT = True):
 
 
 
+
+
 ''' Example 5: search for optimal knapsack solution '''
 # For explanation see my blog post at: https://predicted.blog/multiprocessing-knapsack-problem
 # 3 constant arguments
@@ -169,7 +181,7 @@ def knapsack_search(_, VOLUMES, PRICES, KNAPSACK_VOLUME, solution, solution_pric
     # Note to Shared variables: Change the .value property, not the variable directly.
     OBJECTS = len(VOLUMES)  # amount of objects
     t0 = time.time()
-    while (time.time() - t0) < 60: # search for 20 seconds
+    while (time.time() - t0) < 40: # search for 40 seconds
 
         # Create a random filling of the knapsack:
         pick_positions = random.sample(list(range(OBJECTS)), OBJECTS)
@@ -185,18 +197,19 @@ def knapsack_search(_, VOLUMES, PRICES, KNAPSACK_VOLUME, solution, solution_pric
         # calculate total price and check if it beats the current best
         total_price = sum([PRICES[i] for i in pick_positions])
         if total_price > solution_price.value:
+            print("Current best:", total_price)
             solution_price.value = total_price
             solution.value = pick_positions
 
         # Debugging:
-        if round(time.time() - t0,0) in list(range(0,60,5)): # debugging
-            print(round(time.time() - t0,0),"s, current best:",solution_price.value)
+        # if round(time.time() - t0,0) in list(range(0,60,5)): # debugging
+        #     print(round(time.time() - t0,0),"s, current best:",solution_price.value)
 
 
 def example5():
     # We create our knapsack items and start the multiprocessing loop that uses the
     # knapsack_search() function above.
-    OBJECTS = 20 # amount of items
+    OBJECTS = 24 # amount of items
 
     random.seed(42) # make volumes reproducible
     VOLUMES = [random.randint(20, 100) for _ in range(OBJECTS)] # random volumes for 100 Objects
@@ -220,7 +233,7 @@ def example5():
         pywrapknapsack_solver.KnapsackSolver.KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER, 'test')
     solver.Init(PRICES, [VOLUMES], [KNAPSACK_VOLUME])
     computed_value = solver.Solve()
-    print("\nGoogle OR Optimal Solution (max):", computed_value)
+    print("\nGoogle OR-Tools Solution:", computed_value)
     # packed_items = [x for x in range(len(PRICES))
     #                 if solver.BestSolutionContains(x)]
     # packed_prices = [PRICES[i] for i in packed_items]
